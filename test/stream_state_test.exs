@@ -1,11 +1,13 @@
 defmodule StreamStateTest do
   use ExUnit.Case
   doctest StreamState
-
   use ExUnitProperties
+  use StreamState
 
-  test "greets the world" do
-    assert StreamState.hello() == :world
+  test "call macro with a proper call" do
+
+    mfa = call StreamState.run_commands([1, 2, 3])
+    assert mfa == {:call, {StreamState, :run_commands, [[1, 2, 3]]}}
   end
 
   property "reversing a list doesn't change its length" do
