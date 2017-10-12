@@ -1,6 +1,6 @@
-defmodule PropCheck.Test.Tree do
+defmodule StreamState.Test.Tree do
 	@moduledoc """
-	The tree implementation of 2013 tutorial, Elixir version.
+	The tree implementation of 2013 Proper tutorial, Elixir version (propcheck).
 	"""
 
 	# use PropCheck
