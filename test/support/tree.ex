@@ -43,4 +43,10 @@ defmodule StreamState.Test.Tree do
 	def pre_order(:leaf), do: []
 	def pre_order({:node, x, l, r}), do: [x] ++ pre_order(l) ++ pre_order(r)
 
+	# @spec size(tree(t)) :: non_neg_integer when t: var
+	def size(tree), do: tree |> pre_order() |> Enum.count()
+	# @spec height(tree(t)) :: non_neg_integer when t: var
+	def height(:leaf), do: 0
+	def height({:node, _, left, right}), do: 1 + max(height(left), height(right))
+
 end
