@@ -31,9 +31,31 @@ defmodule StreamState.TreeTest do
   #   end
   # end
   #
+
+  property "Tree.delete/2 has a bug" do
+    # Generate a tree, which has member x more often
+    faulty_tree = integer()
+    |> bind(fn x ->
+      {constant(x),
+       my_tree(one_of([constant(x), integer()]))}
+    end)
+
+    check all {x, t} <- faulty_tree,
+      Tree.member(t, x) do
+      assert Tree.member(t, x)
+      assert not Tree.member(Tree.delete(t, x), x)
+    end
+  end
+
+  property "delete2" do
+    check all {x, t} <- {integer(), my_tree(integer())} do
+      assert not Tree.member(Tree.delete2(t, x), x)
+    end
+  end
+
+
   # Example of a PBT strategy: finding two distinct computations that should
   # result in the same value.
-
   property "sum" do
     check all t <- my_tree(integer()) do
       l = Tree.pre_order(t)
@@ -42,16 +64,23 @@ defmodule StreamState.TreeTest do
     end
   end
 
+  def aggregate(stream, matcher) when not is_list(matcher),
+    do: aggregate(stream, [matcher])
   def aggregate(stream, matcher) do
+    # ensure that the stream's element is pair of the old value and
+    # a (initially empty) list of assigned aggregrate values
     stream
     |> Stream.map(fn
       e = {_v, l} when is_list(l) -> e
       e -> {e, []}
     end)
+    # now match the values
     |> Stream.map(fn {e, stats} ->
+      # for each element apply the matchers
       ms = Enum.reduce(matcher, [], fn
-        (^e, matches)  -> [e | matches]
-        (_, matches) -> matches
+        f, matches when is_function(f, 1) -> [f.(e) | matches]
+        ^e, matches  -> [e | matches]
+        _, matches -> matches
       end)
       {e, [ms | stats]}
     end)
@@ -61,12 +90,14 @@ defmodule StreamState.TreeTest do
   def aggregate_reducer(stream) do
     stream
     |> Enum.reduce({%{}, 0}, fn {_, [keys]}, {map, counter} ->
-      new_map = keys |> Enum.reduce(map, fn k, m -> Map.update(m, k, 1, &(&1 + 1))end)
+      new_map = keys
+      |> Enum.reduce(map, fn k, m -> Map.update(m, k, 1, &(&1 + 1)) end)
       {new_map, counter + 1}
     end)
   end
 
   def aggregate_printer({map, total_counter}) do
+    IO.puts("\nStats:")
     for {tag, c} <- Map.to_list(map) do
       IO.puts "#{inspect tag}: #{(c*100.0)/total_counter}%"
     end
@@ -74,18 +105,57 @@ defmodule StreamState.TreeTest do
 
   test "Generate a proper tree" do
     trees = my_tree(integer())
-    |> Stream.take(10)
-    |> aggregate([:leaf, {:node, 0, :leaf, :leaf}, {:node, 4, :leaf, :leaf}])
+    |> Stream.take(200)
     # |> Enum.to_list()
+    # |> aggregate([:leaf, {:node, 0, :leaf, :leaf}, {:node, 4, :leaf, :leaf}])
+    # |> aggregate(&Tree.size/1)
+    |> aggregate(&Tree.height/1)
+    |> Enum.to_list()
     |> aggregate_reducer()
     |> aggregate_printer()
 
-    assert trees == []
+    assert trees == [:ok]
   end
 
   ##################################
   ## Custom Generators for trees
-  def my_tree(g), do: tree1a(g)
+  def my_tree(g), do: tree_gen(g) # sd_tree(g) #
+
+  defp tree_gen(g), do: sized(fn size -> tree_gen(size, g) end)
+  defp tree_gen(0, _g), do: :leaf
+  defp tree_gen(size, g), do:
+    frequency([
+      {1, tree_gen(0, g)},
+      {9, ({:node, g,
+        resize(tree_gen(g), div(size, 2)),
+        resize(tree_gen(g), div(size, 2))})}
+    ])
+
+  defp empty_tree?(:leaf), do: true
+  defp empty_tree?({:node, _, _, _}), do: false
+
+  def sd_tree(g) do
+    tree(:leaf, fn leaf_data ->
+      {:node, g, leaf_data, leaf_data}
+    end)
+  end
+
+  test "recursive values" do
+    for_many(tree_gen(integer()), # |> StreamData.filter(fn t -> not empty_tree?(t) end),
+      fn {:node, v, left, right} ->
+          assert is_integer(v)
+          assert left == :leaf or match?({:node, _, _, _}, left)
+          assert right == :leaf or match?({:node, _, _, _}, right)
+        t -> assert empty_tree?(t)
+      end
+      )
+  end
+
+  defp for_many(data, count \\ 200, fun) do
+    data
+    |> Stream.take(count)
+    |> Enum.each(fun)
+  end
 
   @doc "Attempts at writing a generator for trees."
   # def tree1(g) do
@@ -97,16 +167,6 @@ defmodule StreamState.TreeTest do
   #   nodes = fn gen -> StreamData.map({gen, gen, gen}, fn {l, r, n} -> {:node, n, l, r} end) end
   #   StreamData.tree(node, nodes.(g))
   # end
-
-  def tree1a(g) do
-    leaf = one_of([:leaf, {:node, g, :leaf, :leaf}])
-    nodes = fn gen ->
-      StreamData.map({gen, gen},
-        fn {l, r} -> {:node, g, l, r}
-      end)
-    end
-    StreamData.tree(leaf, nodes)
-  end
 
   # @doc "Erlang is eager: we need to enforce lazy evaluation to avoid infinite recursion"
   # def tree2(g), do:
