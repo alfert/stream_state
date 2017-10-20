@@ -90,11 +90,13 @@ defmodule StreamState do
   def empty?({}), do: true
   def empty?({_a, _b}), do: false
   def len({}), do: 0
-  def len({head, tail}), do: 1 + len(tail)
+  def len({_head, tail}), do: 1 + len(tail)
   def pair_list(l) do
     Enum.reverse(l)
     |> Enum.reduce({}, fn element, new_list -> cons(element, new_list) end)
   end
+  def to_list({}), do: []
+  def to_list({head, tail}), do: [head | to_list tail]
 
 
   def flatten_nested_list([]), do: []

@@ -59,6 +59,7 @@ defmodule StreamStateTest do
       if not Enum.empty?(l) do
         assert hd(l) == StreamState.head(pl)
       end
+      assert l == StreamState.to_list(pl)
     end
   end
 
