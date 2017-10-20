@@ -46,10 +46,7 @@ defmodule StreamState do
   def command_gen(mod, size) do
     initial = mod.initial_state()
     commands = mod.commands()
-    l = command_gen(size, initial, commands, mod) #  |> Enum.at(0)
-    Logger.flush()
-    Logger.debug "Generated command list (to be put into fixed_list): #{inspect l}"
-    [l] |> StreamData.fixed_list()
+    command_gen(size, initial, commands, mod) #  |> Enum.at(0)
   end
 
 # TODO:
