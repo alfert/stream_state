@@ -15,10 +15,13 @@ defmodule StreamState do
   @type call_t :: StreamData.t({:call, mfa})
   @type call_t_gen :: {:call, {atom, atom, StreamData.t(list())}}
 
-  defmacro call(fun_call = {{:., _, _mod_list}, _, _args} ) do
+  defmacro call(fun_call = {{:., _, _mod_list}, _, my_args} ) do
     call = Macro.decompose_call(fun_call)
-    mfa = Macro.escape {module(call), function(call), args(call)}
-    quote do {:call, unquote(mfa)} end
+    _mfa = Macro.escape {module(call), function(call), args(call)}
+    m = module(call)
+    f = function(call)
+
+    quote do {:call, {unquote(m), unquote(f), StreamData.fixed_list(unquote(my_args))}} end
   end
 
   def module({_fun, _args}), do: Kernel
@@ -29,8 +32,8 @@ defmodule StreamState do
   def function({fun, _args}), do: fun
   def function({{:__aliases__, _, _}, fun, _args}), do: fun
 
-  def args({_fun, args}), do: args
-  def args({{:__aliases__, _, _}, _fun, args}), do: args
+  def args({_fun, args}) when is_list(args), do: args
+  def args({{:__aliases__, _, _}, _fun, args}) when is_list(args), do: args
 
   @doc """
   A generator for commands. Requires the test module as parameter.
