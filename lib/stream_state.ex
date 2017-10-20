@@ -48,39 +48,30 @@ defmodule StreamState do
     commands = mod.commands()
     command_gen(size, initial, commands, mod)
     |> StreamData.map(&to_list/1)
-    #|> StreamData.list_of()
-    #|> StreamData.nonempty()
   end
-
-# TODO:
-# Implement the generator from PropEr exactly with StreamData
-# LET => bind
-# SUCHTHAT => filter / bind_filter
-# command_gen: generator for a list. How to do that? Perhaps we need
-#   help from tree/list?
 
   @spec command_gen(integer, :atom, list({integer, call_t}), atom) :: StreamData.t(call_t)
   def command_gen(0, _, _, _), do: StreamData.constant({})
   def command_gen(size, state, command_list, mod) when size > 0
         and is_list(command_list) and is_atom(state) do
-    Logger.debug "command_gen<#{size}>: command_list is #{inspect command_list}"
+    # Logger.debug "command_gen<#{size}>: command_list is #{inspect command_list}"
     command_list
     # TODO: filter does not work, since call has is generator not an mfa!
     # |> Enum.filter(fn {_, call} -> mod.precondition(state, call) end)
     |> StreamData.frequency()
     |> StreamData.bind(fn cmd ->
-      Logger.debug "command_gen<#{size}>: (old) state is #{inspect state}"
-      Logger.debug "command_gen<#{size}>: new command is #{inspect cmd}"
-      Logger.debug "command_gen<#{size}>: command is #{inspect cmd}"
+      # Logger.debug "command_gen<#{size}>: (old) state is #{inspect state}"
+      # Logger.debug "command_gen<#{size}>: new command is #{inspect cmd}"
+      # Logger.debug "command_gen<#{size}>: command is #{inspect cmd}"
       new_state = mod.transition(state, cmd)
-      Logger.debug "command_gen<#{size}>: new state is: #{inspect new_state}"
+      # Logger.debug "command_gen<#{size}>: new state is: #{inspect new_state}"
       StreamData.bind(StreamData.tuple({state, StreamData.constant(cmd)}),
         fn sc when is_tuple(sc) ->
-          Logger.debug "command_gen<#{size}>: bind: sc is #{inspect sc}"
+          # Logger.debug "command_gen<#{size}>: bind: sc is #{inspect sc}"
           tail = command_gen(size - 1, new_state, command_list, mod)
-          Logger.debug "command_gen<#{size}>: bind: tail is #{inspect tail}"
-          l = StreamData.tuple(cons(StreamData.tuple(sc), tail))
-          Logger.debug "command_gen<#{size}>: bind: cmd seq is #{inspect l}"
+          # Logger.debug "command_gen<#{size}>: bind: tail is #{inspect tail}"
+          l = cons(StreamData.tuple(sc), tail)
+          # Logger.debug "command_gen<#{size}>: bind: cmd seq is #{inspect l}"
           l
         end)
     end)
