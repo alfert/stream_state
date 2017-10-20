@@ -7,7 +7,7 @@ defmodule StreamStateTest do
 
   test "call macro with a proper call" do
     mfa = call StreamState.run_commands([1, 2, 3])
-    assert mfa == {:call, {StreamState, :run_commands, [[1, 2, 3]]}}
+    assert {:call, {StreamState, :run_commands, %StreamData{}}} = mfa
   end
 
   property "reversing a list doesn't change its length" do
