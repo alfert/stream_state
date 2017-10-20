@@ -46,7 +46,10 @@ defmodule StreamState do
   def command_gen(mod, size) do
     initial = mod.initial_state()
     commands = mod.commands()
-    command_gen(size, initial, commands, mod) #  |> Enum.at(0)
+    command_gen(size, initial, commands, mod)
+    |> StreamData.map(&to_list/1)
+    #|> StreamData.list_of()
+    #|> StreamData.nonempty()
   end
 
 # TODO:
