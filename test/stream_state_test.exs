@@ -1,7 +1,7 @@
 defmodule StreamStateTest do
   use ExUnit.Case
   doctest StreamState
-  require StreamData
+  import StreamData
   use ExUnitProperties
   use StreamState
 
@@ -44,6 +44,22 @@ defmodule StreamStateTest do
     assert length(my_list) == 2
     empty = fixed_list([]) |> Enum.at(0)
     assert [] == empty
+  end
+
+  test "generate a list of intertwined values" do
+    odd = fn -> 1 + positive_integer()*2 end
+    even = fn -> positive_integer() * 2 end
+  end
+
+  property "a pair_list is like a normal list" do
+    check all l <- list_of(integer()) do
+      pl = StreamState.pair_list(l)
+      assert Enum.empty?(l) == StreamState.empty?(pl)
+      assert length(l) == StreamState.len(pl)
+      if not Enum.empty?(l) do
+        assert hd(l) == StreamState.head(pl)
+      end
+    end
   end
 
 end

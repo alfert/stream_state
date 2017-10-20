@@ -83,6 +83,20 @@ defmodule StreamState do
     end)
   end
 
+  def cons(a,b), do: {a, b}
+  def append(head, tail), do: cons(head, tail)
+  def head(_pair_list={head, _tail}), do: head
+  def tail(_pair_list={_head, tail}), do: tail
+  def empty?({}), do: true
+  def empty?({_a, _b}), do: false
+  def len({}), do: 0
+  def len({head, tail}), do: 1 + len(tail)
+  def pair_list(l) do
+    Enum.reverse(l)
+    |> Enum.reduce({}, fn element, new_list -> cons(element, new_list) end)
+  end
+
+
   def flatten_nested_list([]), do: []
   def flatten_nested_list([h | t]), do: [h | flatten_nested_list(t)]
 
