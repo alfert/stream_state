@@ -34,11 +34,12 @@ defmodule StreamState.Test.CounterTest do
   #
   #########################
   test "Generate single commands" do
-    assert [] = StreamState.command_gen(0, :init, commands(), __MODULE__) |> Enum.at(0)
-    # cmds = StreamState.command_gen(1, :init, commands(), __MODULE__)
-    cmds = StreamState.command_gen(__MODULE__, 1)
-    Logger.debug "cmds = #{inspect cmds}"
-    assert [{:init, _}] = cmds |> Enum.at(0)
+    assert {} == StreamState.command_gen(0, :init, commands(), __MODULE__) |> Enum.at(0)
+    cmds = StreamState.command_gen(2, :init, commands(), __MODULE__)
+    # cmds = StreamState.command_gen(__MODULE__, 1)
+    # Logger.debug "cmds = #{inspect cmds}"
+    # assert [{:init, _}] = cmds |> Enum.at(0)
+    assert {{:init, _}, _} = cmds |> Enum.at(0)
   end
 
   property "generate a command sequence" do
