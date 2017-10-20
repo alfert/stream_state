@@ -117,6 +117,22 @@ defmodule StreamState.TreeTest do
     assert trees == [:ok]
   end
 
+  test "Nested list tree" do
+    require Logger
+    trees = tree_list_gen(integer())
+    |> Stream.take(100)
+    # |> Enum.to_list()
+    |> aggregate(&tree_list_height/1)
+    |> Enum.to_list()
+    |> aggregate_reducer()
+    |> aggregate_printer()
+    # Logger.debug "trees: #{inspect trees}"
+  end
+
+  defp tree_list_height(:leaf), do: 0
+  defp tree_list_height([:node, _, left, right]), do:
+  1 + max(tree_list_height(left), tree_list_height(right))
+
   ##################################
   ## Custom Generators for trees
   def my_tree(g), do: tree_gen(g) # sd_tree(g) #
@@ -129,6 +145,16 @@ defmodule StreamState.TreeTest do
       {9, ({:node, g,
         resize(tree_gen(g), div(size, 2)),
         resize(tree_gen(g), div(size, 2))})}
+    ])
+
+  defp tree_list_gen(g), do: sized(fn size -> tree_list_gen(size, g) end)
+  defp tree_list_gen(0, _g), do: constant(:leaf)
+  defp tree_list_gen(size, g), do:
+    frequency([
+      {1, tree_gen(0, g)},
+      {9, fixed_list([:node, g,
+        resize(tree_list_gen(g), div(size, 2)),
+        resize(tree_list_gen(g), div(size, 2))])}
     ])
 
   defp empty_tree?(:leaf), do: true
