@@ -5,6 +5,7 @@ defmodule StreamState do
 
   alias StreamData
   require Logger
+  import ExUnit.Assertions
 
   defmacro __using__(_) do
     quote do
@@ -86,6 +87,20 @@ defmodule StreamState do
           l
         end)
     end)
+  end
+
+  def run_commands(command_list, mod) do
+    command_list |> Enum.map(& run_single_command(&1, mod))
+  end
+
+  @spec run_single_command({any, call}, atom) :: any
+  def run_single_command({state, call = {:call, mfa}}, mod) do
+    assert mod.precondition(state, call)
+    {m, f, a} = mfa
+    # all exceptions let the command abort, but how to deal with the history?
+    result = apply(m, f, a)
+    assert mod.postcondition(state, call, result)
+    result
   end
 
   def cons(a,b), do: {a, b}
