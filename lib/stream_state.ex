@@ -38,7 +38,7 @@ defmodule StreamState do
 
   def module({_fun, _args}), do: Kernel
   def module({{:__aliases__, [alias: false], mods}, _, _}), do: Module.concat(mods)
-  def module({{:__aliases__, [alias: mods], _aliased_mod}, _, _}), do: mods 
+  def module({{:__aliases__, [alias: mods], _aliased_mod}, _, _}), do: mods
   def module({{:__aliases__, _meta, mods}, _, _}), do: Module.concat(mods)
 
   def function({fun, _args}), do: fun
@@ -46,6 +46,18 @@ defmodule StreamState do
 
   def args({_fun, args}) when is_list(args), do: args
   def args({{:__aliases__, _, _}, _fun, args}) when is_list(args), do: args
+
+  defmacro fail_eventually(block) do
+    quote do
+      try do
+        unquote(block)
+        raise ExUnitProperties.Error, "all test succeeded, but should eventually fail"
+      rescue
+        ExUnit.AssertionError -> {:ok, %{}}
+        ExUnitProperties.Error -> {:ok, %{}}
+      end
+    end
+  end
 
   @doc """
   A generator for commands. Requires the test module as parameter.
