@@ -36,7 +36,9 @@ defmodule StreamState.Test.CounterTest do
   test "Generate single commands" do
     assert {} == StreamState.command_gen(0, :init, commands(), __MODULE__) |> Enum.at(0)
     cmds = StreamState.command_gen(2, :init, commands(), __MODULE__)
-    assert {{:init, _}, _} = cmds |> Enum.at(0)
+    cmd = cmds |> Enum.at(0) |> StreamState.to_list
+    assert [{:init, _}, {_, _}] = cmd
+    assert [{:init, {:call, {StreamState.Test.Counter, _, _}}}, _] = cmd
   end
 
   property "generate a command sequence" do
