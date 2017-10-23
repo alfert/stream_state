@@ -33,6 +33,10 @@ defmodule StreamState.Test.CounterTest do
   # Testing the generators
   #
   #########################
+  test "the command specifier" do
+
+  end
+
   test "Generate single commands" do
     assert {} == StreamState.command_gen(0, :init, commands(), __MODULE__) |> Enum.at(0)
     cmds = StreamState.command_gen(2, :init, commands(), __MODULE__)
@@ -47,6 +51,20 @@ defmodule StreamState.Test.CounterTest do
       assert {:init, _} = Enum.at(cmds, 0)
       assert length(cmds) > 0
       # assert length(cmds) < 100
+    end
+  end
+
+  def when_fail(what_ever) do
+    Logger.error "when_fail: #{inspect what_ever}"
+  end
+
+  property "run a command sequence" do
+    check all cmds <- StreamState.command_gen(__MODULE__) do
+      Process.flag(:trap_exit, true)
+      {:ok, pid} = Counter.start_link()
+      run_commands(cmds, __MODULE__)
+      |> when_fail()
+      GenServer.stop(pid, :normal)
     end
   end
 
@@ -65,17 +83,19 @@ defmodule StreamState.Test.CounterTest do
   def precondition(_state, {:call, _mfa}), do: true
 
   @doc "The expected outcome. Only called after executing the command"
-  @spec postcondition(state_t, state_t, call_t, any) :: boolean
-  def postcondition(:init, :zero, {:call, {_,:inc, _}}, _result), do: true
-  def postcondition(:init, :zero, {:call, {_,:clear, _}}, _result), do: true
-  def postcondition(:zero, :zero, {:call, {_,:clear, _}}, _result), do: true
-  def postcondition(:zero, :inc, {:call, {_,:inc, _}}, _result), do: true
-  def postcondition(:inc, :inc, {:call, {_,:inc, _}}, _result), do: true
-  def postcondition(:inc, :zero, {:call, {_,:clear, _}}, _result), do: true
-  def postcondition(:init, _, {:call, {_,:get, _}}, -1), do: true
-  def postcondition(:zero, _, {:call, {_,:get, _}}, 0), do: true
-  def postcondition(:one, _, {:call, {_,:get, _}}, result), do: result > 0
-  def postcondition(_old_state, _new_state, {:call, _mfa}, _result) do
+  @spec postcondition(state_t, call_t, any) :: boolean
+  def postcondition(:init, {:call, {_,:inc, _}}, _result), do: true
+  def postcondition(:init, {:call, {_,:clear, _}}, _result), do: true
+  def postcondition(:zero, {:call, {_,:clear, _}}, _result), do: true
+  def postcondition(:zero, {:call, {_,:inc, _}}, _result), do: true
+  def postcondition(:inc, {:call, {_,:inc, _}}, _result), do: true
+  def postcondition(:inc, {:call, {_,:clear, _}}, _result), do: true
+  def postcondition(:init, {:call, {_,:get, _}}, -1), do: true
+  def postcondition(:zero, {:call, {_,:get, _}}, 0), do: true
+  def postcondition(:one,  {:call, {_,:get, _}}, result), do: result > 0
+  def postcondition(:one, {:call, {_,:inc, _}}, _result), do: true
+  def postcondition(:one, {:call, {_,:clear, _}}, _result), do: true
+  def postcondition(_old_state, {:call, _mfa}, _result) do
     false
   end
 
