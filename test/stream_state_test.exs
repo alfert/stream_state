@@ -5,9 +5,16 @@ defmodule StreamStateTest do
   use ExUnitProperties
   use StreamState
 
+  alias StreamState.Test.Counter
+
   test "call macro with a proper call" do
-    mfa = call StreamState.run_commands([1, 2, 3])
-    assert {:call, {StreamState, :run_commands, %StreamData{}}} = mfa
+    #mfa = call StreamState.run_commands([1, 2, 3])
+    #assert {:call, {StreamState, :run_commands, %StreamData{}}} = mfa
+  end
+
+  test "call macros with an aliased call" do
+    mfa = call StreamState.Test.Counter.get()
+    assert {:call, {StreamState.Test.Counter, :get, %StreamData{}}} = mfa
   end
 
   property "reversing a list doesn't change its length" do
