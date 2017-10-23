@@ -86,14 +86,18 @@ defmodule StreamState.Test.CounterTest do
   @spec postcondition(state_t, call_t, any) :: boolean
   def postcondition(:init, {:call, {_,:inc, _}}, _result), do: true
   def postcondition(:init, {:call, {_,:clear, _}}, _result), do: true
+  def postcondition(:init, {:call, {_,:get, _}}, -1), do: true
   def postcondition(:zero, {:call, {_,:clear, _}}, _result), do: true
   def postcondition(:zero, {:call, {_,:inc, _}}, _result), do: true
   def postcondition(:inc, {:call, {_,:inc, _}}, _result), do: true
   def postcondition(:inc, {:call, {_,:clear, _}}, _result), do: true
-  def postcondition(:init, {:call, {_,:get, _}}, -1), do: true
   def postcondition(:zero, {:call, {_,:get, _}}, 0), do: true
   def postcondition(:one,  {:call, {_,:get, _}}, result), do: result > 0
-  def postcondition(:one, {:call, {_,:inc, _}}, _result), do: true
+  def postcondition(:one, {:call, {_,:inc, _}}, result) do
+    # generate a consistent failure
+    result != 5
+    # true
+  end
   def postcondition(:one, {:call, {_,:clear, _}}, _result), do: true
   def postcondition(_old_state, {:call, _mfa}, _result) do
     false
