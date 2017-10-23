@@ -12,22 +12,33 @@ defmodule StreamState do
     end
   end
 
-  @type call_t :: StreamData.t({:call, mfa})
+  @type call :: {:call, mfa}
+  @type call_t :: StreamData.t(call)
   @type call_t_gen :: {:call, {atom, atom, StreamData.t(list())}}
 
+  @doc """
+  Creates a `{:call, mfa}` like tuple from a regular function call, where
+  the arguments are translated into a `StreamData.fixed_list/1`, since the
+  arguments to the call are meant to be resolved via `StreamData`.
+
+  **IMPORTANT**: The `call` macro cannot deal with aliased remote functions,
+  you have always(!) to use the full module name.
+  """
   defmacro call(fun_call = {{:., _, _mod_list}, _, my_args} ) do
-    call = Macro.decompose_call(fun_call)
-    _mfa = Macro.escape {module(call), function(call), args(call)}
-    m = module(call)
-    f = function(call)
+    call = Macro.expand(fun_call, __ENV__)
+    # IO.puts "call = #{inspect call}"
+    mfa = Macro.decompose_call(call)
+    # IO.puts "mfa = #{inspect mfa}"
+    m = module(mfa)
+    f = function(mfa)
 
     quote do {:call, {unquote(m), unquote(f), StreamData.fixed_list(unquote(my_args))}} end
   end
 
   def module({_fun, _args}), do: Kernel
   def module({{:__aliases__, [alias: false], mods}, _, _}), do: Module.concat(mods)
-  def module({{:__aliases__, [alias: mods], _aliased_mod}, _, _}), do: Module.concat(mods)
-  def module({{:__aliases__, _, mods}, _, _}), do: Module.concat(mods)
+  def module({{:__aliases__, [alias: mods], _aliased_mod}, _, _}), do: mods 
+  def module({{:__aliases__, _meta, mods}, _, _}), do: Module.concat(mods)
 
   def function({fun, _args}), do: fun
   def function({{:__aliases__, _, _}, fun, _args}), do: fun
