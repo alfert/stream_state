@@ -90,9 +90,9 @@ defmodule StreamState.Test.CounterTest do
   def initial_state(), do: :init
 
   def commands(), do: [
-    {1, constant(call Counter.clear())},
-    {3, constant(call Counter.inc())},
-    {1, constant(call Counter.get())}
+    {1, constant(call StreamState.Test.Counter.clear())},
+    {3, constant(call StreamState.Test.Counter.inc())},
+    {1, constant(call StreamState.Test.Counter.get())}
   ]
 
   ##########################
