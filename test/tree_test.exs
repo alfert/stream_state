@@ -2,6 +2,7 @@ defmodule StreamState.TreeTest do
   use ExUnit.Case
   alias StreamState.Test.Tree
   use ExUnitProperties
+  use StreamState
 
   ################################
   ### Properties of the tree
@@ -42,9 +43,11 @@ defmodule StreamState.TreeTest do
 
     check all {x, t} <- faulty_tree,
       Tree.member(t, x) do
-        # this one should fail, not always, but eventually 
-        assert Tree.member(t, x)
-        assert not Tree.member(Tree.delete(t, x), x)
+      fail_eventually do
+          # this one should fail, not always, but eventually
+          assert Tree.member(t, x)
+          assert not Tree.member(Tree.delete(t, x), x)
+      end
     end
   end
 
@@ -115,7 +118,7 @@ defmodule StreamState.TreeTest do
     |> aggregate_reducer()
     |> aggregate_printer()
 
-    assert trees |> Enum.all? fn x -> x == :ok end
+    assert trees |> Enum.all?(fn x -> x == :ok end)
   end
 
   test "Nested list tree" do
