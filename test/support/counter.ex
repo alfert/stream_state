@@ -23,9 +23,12 @@ defmodule StreamState.Test.Counter do
     Agent.get(pid, fn state -> state end)
   end
 
-  @spec inc() :: :ok
-  @spec inc(pid) :: :ok
+  @spec inc() :: :integer
+  @spec inc(pid) :: :integer
   def inc(pid \\ __MODULE__) do
-    Agent.update(pid, fn state -> state + 1 end)
+    Agent.get_and_update(pid, fn state ->
+      new_state = state + 1
+      {new_state, new_state}
+    end)
   end
 end
