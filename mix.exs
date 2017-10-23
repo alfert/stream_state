@@ -34,7 +34,8 @@ defmodule StreamState.Mixfile do
       {:stream_data, "~> 0.3"},
       # {:stream_data, path: "../stream_data"},
       {:dialyxir, "~> 0.5.1", only: [:dev, :test]},
-      {:coverex, "~> 1.4", only: :test}
+      {:coverex, "~> 1.4", only: :test},
+      {:ex_doc, "~> 0.15", only: :dev}
     ]
   end
 end
