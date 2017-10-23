@@ -47,17 +47,82 @@ defmodule StreamState do
   def args({_fun, args}) when is_list(args), do: args
   def args({{:__aliases__, _, _}, _fun, args}) when is_list(args), do: args
 
+  defmodule TooLongRunWithoutFailureError do
+    defexception [:message]
+  end
+
+  @doc """
+  The `fail_eventually` macro is used for negative testing and states that
+  the property will fail eventually.
+
+  For negative testing, we want to show that the system under test behaves properly
+  when tested with illegal data. If we want to prove that the data will fail
+  in every case, then it is sufficient to negate the assertions. But if only
+  some of the data does not satify the assertions, then `fail_eventually` will
+  ensure that at least once in each run of the property the assertions are not satisfied.
+
+  `fail_eventually` detects all errors of `ExUnitProperties` and all ExUnit
+  assertion errors.
+
+  ## Examples
+
+  The first examples shows that some integers are negative.
+
+      property "all integers are positive" do
+        fail_eventually do
+          check all n <- integer() do
+            assert n >= 0
+          end
+        end
+      end
+
+  The second example shows that some lists have no heads. In this case,
+  the assignment `n = hd(l)` raises an exception and `l` is empty: the
+  `ArgumentError` exception is caught during executing the property check, resulting
+  in an `ExUnitProperties.Error`. This exception is caught by `fail_eventually`
+  and lets the entire property succeed.
+
+      property "not all lists have a head" do
+        fail_eventually do
+          check all l <- list_of(positive_integer()) do
+            n = hd(l)
+            assert n > 0
+          end
+        end
+      end
+
+  The third example shows a failing property because no values are generated
+  that will not satisfy the assertion: Positive integers are always greater
+  or equal to 0.
+
+      property "all positive integers are positive" do
+        fail_eventually do
+          check all n <- positive_integer() do
+            assert n >= 0
+          end
+        end
+      end
+      #=>     ** (StreamState.TooLongRunWithoutFailureError) all tests succeeded, but should eventually fail
+      #=> code: fail_eventually do
+      #=> stacktrace:
+      #=>   test/stream_state_test.exs:95: (test)
+
+
+
+  """
+
   defmacro fail_eventually(block) do
     quote do
       try do
         unquote(block)
-        raise ExUnitProperties.Error, "all test succeeded, but should eventually fail"
+        raise TooLongRunWithoutFailureError, message: "all tests succeeded, but should eventually fail"
       rescue
         ExUnit.AssertionError -> {:ok, %{}}
         ExUnitProperties.Error -> {:ok, %{}}
       end
     end
   end
+
 
   @doc """
   A generator for commands. Requires the test module as parameter.
