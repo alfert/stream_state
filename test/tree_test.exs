@@ -42,12 +42,13 @@ defmodule StreamState.TreeTest do
 
     check all {x, t} <- faulty_tree,
       Tree.member(t, x) do
-      assert Tree.member(t, x)
-      assert not Tree.member(Tree.delete(t, x), x)
+        # this one should fail, not always, but eventually 
+        assert Tree.member(t, x)
+        assert not Tree.member(Tree.delete(t, x), x)
     end
   end
 
-  property "delete2" do
+  property "delete2 has no bug" do
     check all {x, t} <- {integer(), my_tree(integer())} do
       assert not Tree.member(Tree.delete2(t, x), x)
     end
@@ -114,7 +115,7 @@ defmodule StreamState.TreeTest do
     |> aggregate_reducer()
     |> aggregate_printer()
 
-    assert trees == [:ok]
+    assert trees |> Enum.all? fn x -> x == :ok end
   end
 
   test "Nested list tree" do
