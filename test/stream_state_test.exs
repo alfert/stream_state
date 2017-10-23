@@ -92,22 +92,26 @@ defmodule StreamStateTest do
 
   # test fail_eventually will fail, because nothing fails inside
   property "all non negative integers are positive" do
-    fail_eventually do
-      check all n <- positive_integer() do
-        assert n >= 0
+    assert_raise(StreamState.TooLongRunWithoutFailureError, fn ->
+      fail_eventually do
+        check all n <- positive_integer() do
+          assert n >= 0
+        end
       end
-    end
+    end)
   end
 
 
   # test fail_eventually, because nothing fails inside
   property "all nonempty lists have a head" do
-    fail_eventually do
-      check all l <- nonempty(list_of(positive_integer())) do
-        assert length(l) >= 0
-        n = hd(l)
-        assert n >= 0
+    assert_raise(StreamState.TooLongRunWithoutFailureError, fn ->
+      fail_eventually do
+        check all l <- nonempty(list_of(positive_integer())) do
+          assert length(l) >= 0
+          n = hd(l)
+          assert n >= 0
+        end
       end
-    end
+    end)
   end
 end
