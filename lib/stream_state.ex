@@ -189,22 +189,39 @@ defmodule StreamState do
     result
   end
 
+
+  #################################################################
+  ##
+  # List functions for a cons list out of tuples since stream_date
+  # cannot handle lists as generic combinators of generators.
+  # They have property based test to ensure functionalty, but
+  # no docs, since they are not part of the regular API.
+  ##
+  #################################################################
+  @doc false
   def cons(a,b), do: {a, b}
+  @doc false
   def append(head, tail), do: cons(head, tail)
+  @doc false
   def head(_pair_list={head, _tail}), do: head
+  @doc false
   def tail(_pair_list={_head, tail}), do: tail
+  @doc false
   def empty?({}), do: true
   def empty?({_a, _b}), do: false
+  @doc false
   def len({}), do: 0
   def len({_head, tail}), do: 1 + len(tail)
+  @doc false
   def pair_list(l) do
     Enum.reverse(l)
     |> Enum.reduce({}, fn element, new_list -> cons(element, new_list) end)
   end
+  @doc false
   def to_list({}), do: []
   def to_list({head, tail}), do: [head | to_list tail]
 
-
+  @doc false
   def flatten_nested_list([]), do: []
   def flatten_nested_list([h | t]), do: [h | flatten_nested_list(t)]
 
