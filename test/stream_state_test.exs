@@ -114,4 +114,15 @@ defmodule StreamStateTest do
       end
     end)
   end
+
+  test "Pretty print a command sequence" do
+    require Logger
+    cmds = [call: {StreamState, :fun, [1, 2, 3]},
+            call: {StreamState.Test.Counter, :start, []}]
+    output = StreamState.pretty_print_commands(cmds)
+    Logger.debug "output= #{output}"
+    assert output =~ ~r/call/
+    assert output =~ "call Elixir.StreamState.Test.Counter.start()"
+
+  end
 end

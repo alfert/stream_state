@@ -189,6 +189,27 @@ defmodule StreamState do
     result
   end
 
+  @doc """
+  Creates an Inspect.Algebra document for a symbolic call.
+  """
+  @spec pretty_print_command({:call, mfa}) :: Inspect.Algebra.t
+  def pretty_print_command({:call, {m, f, args}}) do
+    import Inspect.Algebra
+    the_args = surround_many("(", args, ")", %Inspect.Opts{limit: :infinity, pretty: true},
+        fn arg, _opts -> to_string(arg) end)
+    the_call = concat("#{m}.#{f}", the_args)
+    glue("call", the_call)
+  end
+
+  @spec pretty_print_commands(list(call)) :: String.t
+  def pretty_print_commands(cmds) when is_list(cmds) do
+    import Inspect.Algebra
+    width = IEx.width()
+    surround_many("[", cmds, "]", %Inspect.Opts{limit: :infinity, pretty: true},
+      fn cmd, _opts -> cmd |> pretty_print_command |> group end)
+    |> format(width)
+    |> IO.iodata_to_binary
+  end
 
   #################################################################
   ##
