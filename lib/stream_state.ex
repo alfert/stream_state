@@ -64,6 +64,15 @@ defmodule StreamState do
   `fail_eventually` detects all errors of `ExUnitProperties` and all ExUnit
   assertion errors.
 
+  ## Bad usage of `fail_eventually`
+  The macro can be used to specify sloppy properties, which are allowed to fail
+  somehow. This does not help to improve the quality assessment and should be
+  avoided. Another bad use case to have properties that should show that
+  bad designed implemention fails to hold the property. Here it is better to
+  use an `assert_raise` to make explicetly clear, that the property will raise
+  an (assertion) exception and everything is fine this is called. You can
+  see an example for this approach in the `tree_test.exs` example.
+
   ## Examples
 
   The first examples shows that some integers are negative.
