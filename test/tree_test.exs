@@ -7,31 +7,6 @@ defmodule StreamState.TreeTest do
   ################################
   ### Properties of the tree
 
-  # # delete is faulty, therefore we expect it fail now and then
-  # property "delete" do
-  #   # the faulty tree has a default-value, which occurs more often
-  #   # than other values. We also delete this default-value, hence
-  #   # the buggy delete method should fail.
-  #   faulty_tree = let x <- integer() do
-  #     {x, tree(default(x, integer()))}
-  #   end
-  #
-  #   fails(forall {x, t} <- faulty_tree do
-  #     not Tree.member(Tree.delete(t, x), x)
-  #   end)
-  #
-  # end
-  #
-  # # delete2 is not faulty
-  # property "delete2", [:verbose, {:max_size, 20}]  do
-  #   forall {x, t} <- {integer(), tree(integer())} do
-  #       tsize = t |> Tree.pre_order |> Enum.count
-  #       (not Tree.member(Tree.delete2(t, x), x))
-  #       |> collect(tsize)
-  #       |> measure("Tree Size", tsize)
-  #   end
-  # end
-  #
 
   property "Tree.delete/2 has a bug" do
     # Generate a tree, which has member x more often
@@ -41,14 +16,14 @@ defmodule StreamState.TreeTest do
        my_tree(one_of([constant(x), integer()]))}
     end)
 
-    check all {x, t} <- faulty_tree,
-      Tree.member(t, x) do
-      fail_eventually do
-          # this one should fail, not always, but eventually
+    assert_raise(ExUnit.AssertionError, fn ->
+      check all {x, t} <- faulty_tree,
+        Tree.member(t, x) do
+          # this one should fail and throw an AssertionError
           assert Tree.member(t, x)
           assert not Tree.member(Tree.delete(t, x), x)
       end
-    end
+    end)
   end
 
   property "delete2 has no bug" do
