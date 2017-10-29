@@ -175,18 +175,37 @@ defmodule StreamState do
     end)
   end
 
+  @type failure :: :precondition_failed | :postcondition_failed | :caught_exception | :caught_error
+
+  @spec run_commands(list({any, call}), atom) :: {true | failure, list}
   def run_commands(command_list, mod) do
-    command_list |> Enum.map(& run_single_command(&1, mod))
+    {result_list, result} = command_list
+    |> Enum.map_reduce(true, & run_single_command(&1, mod, &2))
+    executed_commands = result_list |> Enum.filter(fn x -> x != :not_executed end)
+    {result, executed_commands}
   end
 
-  @spec run_single_command({any, call}, atom) :: any
-  def run_single_command({state, call = {:call, mfa}}, mod) do
-    assert mod.precondition(state, call)
-    {m, f, a} = mfa
-    # all exceptions let the command abort, but how to deal with the history?
-    result = apply(m, f, a)
-    assert mod.postcondition(state, call, result)
-    result
+  @spec run_single_command({any, call}, atom, :ok) :: {any, any}
+  def run_single_command({state, call = {:call, {m, f, a}}}, mod, true) do
+    if not mod.precondition(state, call) do
+      {{state, call}, :precondition_failed}
+    else
+      try do
+        result = apply(m, f, a)
+        new_acc = case mod.postcondition(state, call, result) do
+          false -> :postcondition_failed
+          true -> true
+        end
+        {{state, call, result}, new_acc}
+      rescue
+        exc -> {{state, call}, {:caught_exception, exc}}
+      catch
+        error, reason -> {{state, call}, {:caught_error, error, reason}}
+      end
+    end
+  end
+  def run_single_command({_state, _call}, _mod, failure) do
+    {:not_executed, failure}
   end
 
   @doc """
@@ -211,6 +230,26 @@ defmodule StreamState do
     |> IO.iodata_to_binary
   end
 
+  def pretty_print_hist_element({state, call, result}) do
+    import Inspect.Algebra
+    state_s = "#{inspect state}:"
+    result_s = "#{inspect result} = "
+    fold_doc([state_s, result_s, pretty_print_command(call)], fn(doc, acc) ->
+      glue(doc, acc)
+    end)
+  end
+  def pretty_print_hist_element(something) do
+    "#{inspect something}"
+  end
+
+  def pretty_print_history(hist) when is_list(hist) do
+    import Inspect.Algebra
+    width = IEx.width()
+    surround_many("[", hist, "]", %Inspect.Opts{limit: :infinity, pretty: true},
+      fn cmd, _opts -> cmd |> pretty_print_hist_element |> group end)
+    |> format(width)
+    |> IO.iodata_to_binary
+  end
   #################################################################
   ##
   # List functions for a cons list out of tuples since stream_date
