@@ -54,18 +54,43 @@ defmodule StreamState.Test.CounterTest do
     end
   end
 
-  def when_fail(what_ever) do
-    Logger.error "when_fail: #{inspect what_ever}"
+  def when_fail(results = {true, _commands}, _fun) do
+    results
+  end
+  def when_fail(results = {failure, commands}, fun) when is_function(fun, 2) do
+    fun.(failure, commands)
+    results
+  end
+
+  def wait_for_stop(pid) do
+    ref = Process.monitor(pid)
+    receive do
+      {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+    end
   end
 
   property "run a command sequence" do
-    check all cmds <- StreamState.command_gen(__MODULE__) do
-      Process.flag(:trap_exit, true)
-      {:ok, pid} = Counter.start_link()
-      run_commands(cmds, __MODULE__)
-      |> when_fail()
-      GenServer.stop(pid, :normal)
-    end
+  #  try do
+      check all cmds <- StreamState.command_gen(__MODULE__) do
+        Process.flag(:trap_exit, true)
+        pid = case Counter.start_link() do
+          {:ok, c_pid}  -> c_pid
+          {:error, {:already_started, _c_pid}} -> :kapputt # c_pid
+        end
+        {success?, _history} = run_commands(cmds, __MODULE__)
+        |> when_fail(fn failure, hist ->
+          IO.puts "Failure: #{inspect failure}"
+          IO.puts("History: #{StreamState.pretty_print_history(hist)}")
+        end)
+        :ok = GenServer.stop(pid, :normal)
+        wait_for_stop(pid)
+        assert success? == true
+      end
+    # rescue
+    #   ex ->
+    #     IO.puts "Found an exception: #{ex.message()}"
+    #     # reraise(message, stacktrace)
+    # end
   end
 
   ##########################
